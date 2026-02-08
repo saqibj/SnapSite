@@ -2,7 +2,8 @@
 
 A powerful Chrome extension that automatically crawls websites and captures full-page screenshots of every page within the same domain.
 
-**Repository:** [github.com/saqibj/SnapSite](https://github.com/saqibj/SnapSite)
+**Repository:** [github.com/saqibj/SnapSite](https://github.com/saqibj/SnapSite)  
+**Version:** Defined in `manifest.json` (and `package.json`). See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## ✨ Features
 
@@ -45,6 +46,7 @@ SnapSite/
 ├── package.json
 ├── .gitignore
 ├── LICENSE
+├── CHANGELOG.md           # Release history
 └── README.md              # This file
 ```
 
@@ -57,6 +59,7 @@ SnapSite/
 | [EXAMPLES.md](docs/EXAMPLES.md) | Configuration examples by site type |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and fixes |
 | [FILE_STRUCTURE.md](docs/FILE_STRUCTURE.md) | File-by-file reference |
+| [CHANGELOG.md](CHANGELOG.md) | Release history and versioning |
 
 ## 🚀 Installation
 

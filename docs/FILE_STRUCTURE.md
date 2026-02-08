@@ -25,6 +25,7 @@ SnapSite/
 ├── package.json
 ├── .gitignore
 ├── LICENSE
+├── CHANGELOG.md           # Release history / versioning
 └── README.md
 ```
 
@@ -179,6 +180,13 @@ SnapSite/
 **Purpose:** MIT license text  
 **Type:** Text  
 **For:** Legal open-source distribution.
+
+---
+
+### `CHANGELOG.md`
+**Purpose:** Release history and versioning  
+**Type:** Markdown  
+**Contains:** Versioned list of added/changed/fixed/removed items. Version number is defined in `manifest.json` and kept in sync in `package.json`.
 
 ---
 
