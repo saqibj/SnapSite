@@ -1,6 +1,6 @@
 {
   "name": "snapsite",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Chrome extension to automatically crawl and screenshot websites",
   "main": "background.js",
   "scripts": {

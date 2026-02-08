@@ -1,6 +1,7 @@
 // --- Logging (for troubleshooting) ---
 const LOG_LEVELS = { INFO: 'INFO', WARN: 'WARN', ERROR: 'ERROR' };
 const LOG_BUFFER_MAX = 100;
+const LOG_PERSIST_TAIL = 50;
 const logBuffer = [];
 
 function log(level, message, detail) {
@@ -9,16 +10,32 @@ function log(level, message, detail) {
   const line = `[${ts}] [${level}] ${message}${detailStr}`;
   logBuffer.push(line);
   if (logBuffer.length > LOG_BUFFER_MAX) logBuffer.shift();
-  if (level === LOG_LEVELS.ERROR) console.error('[SnapSite]', message, detail ?? '');
-  else if (level === LOG_LEVELS.WARN) console.warn('[SnapSite]', message, detail ?? '');
-  else console.log('[SnapSite]', message, detail ?? '');
+  const consoleDetail = detail !== undefined ? (typeof detail === 'object' ? JSON.stringify(detail) : detail) : '';
+  if (level === LOG_LEVELS.ERROR) console.error('[SnapSite]', message, consoleDetail);
+  else if (level === LOG_LEVELS.WARN) console.warn('[SnapSite]', message, consoleDetail);
+  else console.log('[SnapSite]', message, consoleDetail);
+  // Persist recent logs so they survive service worker restart (popup can show them after reload)
+  if (level === LOG_LEVELS.ERROR || level === LOG_LEVELS.WARN) {
+    const tail = logBuffer.slice(-LOG_PERSIST_TAIL);
+    chrome.storage.local.set({ snapSiteLogTail: tail }).catch(() => {});
+  }
 }
 
 function logInfo(msg, detail) { log(LOG_LEVELS.INFO, msg, detail); }
 function logWarn(msg, detail) { log(LOG_LEVELS.WARN, msg, detail); }
 function logError(msg, detail) { log(LOG_LEVELS.ERROR, msg, detail); }
 
-function getLogs() { return [...logBuffer]; }
+function getLogs() {
+  return logBuffer.length > 0 ? [...logBuffer] : null;
+}
+
+// Restore persisted log tail when service worker starts (so Logs panel shows something after reload)
+chrome.storage.local.get(['snapSiteLogTail'], (r) => {
+  if (Array.isArray(r?.snapSiteLogTail) && r.snapSiteLogTail.length > 0) {
+    logBuffer.push(...r.snapSiteLogTail);
+    if (logBuffer.length > LOG_BUFFER_MAX) logBuffer.splice(0, logBuffer.length - LOG_BUFFER_MAX);
+  }
+});
 
 // Crawl state management
 let crawlState = {
@@ -44,32 +61,56 @@ let crawlState = {
   recentPages: []
 };
 
-// Message listener for popup communication
+// Message listener for popup communication (must call sendResponse for every branch to avoid "message channel closed" error)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'startCrawl') {
-    startCrawl(message.url, message.config);
-  } else if (message.action === 'stopCrawl') {
-    stopCrawl();
-  } else if (message.action === 'pauseCrawl') {
-    pauseCrawl();
-  } else if (message.action === 'resumeCrawl') {
-    resumeCrawl();
-  } else if (message.action === 'getState') {
-    sendResponse({
-      state: {
-        isRunning: crawlState.isRunning,
-        isPaused: crawlState.isPaused,
-        visited: crawlState.visited.size,
-        queueSize: crawlState.toVisit.length,
-        screenshotCount: crawlState.screenshotCount,
-        currentUrl: crawlState.currentUrl,
-        status: getStatus()
+  try {
+    if (message.action === 'startCrawl') {
+      startCrawl(message.url, message.config);
+      sendResponse({ ok: true });
+    } else if (message.action === 'stopCrawl') {
+      stopCrawl();
+      sendResponse({ ok: true });
+    } else if (message.action === 'pauseCrawl') {
+      pauseCrawl();
+      sendResponse({ ok: true });
+    } else if (message.action === 'resumeCrawl') {
+      resumeCrawl();
+      sendResponse({ ok: true });
+    } else if (message.action === 'getState') {
+      sendResponse({
+        state: {
+          isRunning: crawlState.isRunning,
+          isPaused: crawlState.isPaused,
+          visited: crawlState.visited.size,
+          queueSize: crawlState.toVisit.length,
+          screenshotCount: crawlState.screenshotCount,
+          currentUrl: crawlState.currentUrl,
+          status: getStatus()
+        }
+      });
+    } else if (message.action === 'getLogs') {
+      const mem = getLogs();
+      if (mem && mem.length > 0) {
+        sendResponse({ logs: mem });
+      } else {
+        chrome.storage.local.get(['snapSiteLogTail'], (r) => {
+          const stored = r?.snapSiteLogTail;
+          sendResponse({ logs: Array.isArray(stored) ? stored : [], fromStorage: !!stored });
+        });
+        return true; // keep channel open for async sendResponse
       }
-    });
-  } else if (message.action === 'getLogs') {
-    sendResponse({ logs: getLogs() });
+    } else if (message.action === 'clearRecentPages') {
+      crawlState.recentPages = [];
+      chrome.storage.local.set({ recentPages: [] });
+      sendResponse({ ok: true });
+    } else {
+      sendResponse({ ok: false });
+    }
+  } catch (e) {
+    logError('Message handler error', e?.message ?? String(e));
+    sendResponse({ ok: false, error: e?.message });
   }
-  return true;
+  return false; // no async response; we replied synchronously
 });
 
 // Start crawling process
@@ -81,7 +122,17 @@ async function startCrawl(startUrl, config) {
     // Initialize state
     crawlState.baseHost = url.host;
     crawlState.baseDomain = extractDomain(url.host);
-    crawlState.config = { ...crawlState.config, ...config };
+    // Merge config with validated numbers (avoid NaN from popup)
+    const defaults = { maxPages: 50, maxDepth: 10, delay: 2000, waitForLoad: 3000 };
+    const num = (v, def) => (typeof v === 'number' && !Number.isNaN(v) ? v : def);
+    crawlState.config = {
+      ...crawlState.config,
+      ...config,
+      maxPages: num(config.maxPages, defaults.maxPages),
+      maxDepth: num(config.maxDepth, defaults.maxDepth),
+      delay: num(config.delay, defaults.delay),
+      waitForLoad: num(config.waitForLoad, defaults.waitForLoad)
+    };
     crawlState.visited.clear();
     crawlState.toVisit = [startUrl];
     crawlState.urlDepths.clear();
@@ -178,9 +229,10 @@ async function crawlNext() {
   updateProgress();
   logInfo('Processing page', { url, depth, queueRemaining: crawlState.toVisit.length });
 
+  let tab;
   try {
     // Create new tab
-    const tab = await chrome.tabs.create({ url, active: false });
+    tab = await chrome.tabs.create({ url, active: false });
     logInfo('Tab created, waiting for load', { tabId: tab.id });
 
     // Wait for page to load
@@ -223,8 +275,14 @@ async function crawlNext() {
       logWarn('Screenshot failed for page (see ERROR above)', url);
     }
 
-    // Close tab
-    await chrome.tabs.remove(tab.id);
+    // Close tab (may already be closed by user or crash)
+    try {
+      await chrome.tabs.remove(tab.id);
+    } catch (e) {
+      if (!e?.message?.includes('No tab with id')) {
+        logWarn('Could not close tab (may already be closed)', { tabId: tab.id, url });
+      }
+    }
 
     // Delay before next request
     await sleep(crawlState.config.delay);
@@ -235,6 +293,15 @@ async function crawlNext() {
     const errMsg = error?.message ?? String(error);
     logError('Failed to access page', { url, error: errMsg });
     addRecentPage(url, false);
+
+    // Try to close tab if it was created (e.g. user closed it or it crashed)
+    try {
+      if (typeof tab !== 'undefined' && tab?.id) {
+        await chrome.tabs.remove(tab.id);
+      }
+    } catch (e) {
+      // Ignore
+    }
 
     // Continue despite error
     await sleep(crawlState.config.delay);
@@ -256,22 +323,53 @@ async function takeFullPageScreenshot(tabId, url) {
 }
 
 async function takeFullPageScreenshotOnce(tabId, url) {
+  let tab;
   try {
+    // Chrome does not render background tabs; captureScreenshot returns no data for inactive tabs.
+    // Activate the tab and focus its window so the page is painted, then capture.
+    try {
+      tab = await chrome.tabs.get(tabId);
+      await chrome.tabs.update(tabId, { active: true });
+      if (tab.windowId) {
+        await chrome.windows.update(tab.windowId, { focused: true });
+      }
+      await sleep(800); // allow tab to paint and composite
+    } catch (e) {
+      logWarn('Could not activate/focus tab for screenshot', { tabId, url, error: e?.message });
+      tab = await chrome.tabs.get(tabId).catch(() => null);
+    }
+    if (!tab) {
+      logError('Could not get tab for screenshot', { tabId, url });
+      return false;
+    }
+
     // Attach debugger
     await chrome.debugger.attach({ tabId }, '1.3');
-    
-    // Get page dimensions
-    const { result: layout } = await chrome.debugger.sendCommand(
+
+    // Get page dimensions (layout/contentSize can be missing on some SPAs or before layout)
+    const response = await chrome.debugger.sendCommand(
       { tabId },
       'Page.getLayoutMetrics'
     );
-    
-    let width = Math.round(layout.contentSize.width);
-    let height = Math.round(layout.contentSize.height);
-    
-    // Cap dimensions to avoid CDP capture failures on very large pages
-    if (width < 1) width = 800;
-    if (height < 1) height = 600;
+    const layout = response?.result;
+    const contentSize = layout?.contentSize;
+    const viewport = layout?.layoutViewport;
+    let width = contentSize?.width != null ? Math.round(Number(contentSize.width)) : 0;
+    let height = contentSize?.height != null ? Math.round(Number(contentSize.height)) : 0;
+    if (width < 1 || height < 1) {
+      const vw = viewport?.clientWidth ?? viewport?.width;
+      const vh = viewport?.clientHeight ?? viewport?.height;
+      if (vw != null && vh != null) {
+        width = Math.round(Number(vw));
+        height = Math.round(Number(vh));
+        logInfo('Using layoutViewport (contentSize missing)', { width, height });
+      }
+    }
+    if (width < 1 || height < 1) {
+      logWarn('No valid dimensions from getLayoutMetrics; using default 1280x720', { url });
+      width = 1280;
+      height = 720;
+    }
     if (width > MAX_SCREENSHOT_WIDTH || height > MAX_SCREENSHOT_HEIGHT) {
       width = Math.min(width, MAX_SCREENSHOT_WIDTH);
       height = Math.min(height, MAX_SCREENSHOT_HEIGHT);
@@ -279,7 +377,7 @@ async function takeFullPageScreenshotOnce(tabId, url) {
     }
     
     // Capture full page screenshot
-    const { result } = await chrome.debugger.sendCommand(
+    const captureResponse = await chrome.debugger.sendCommand(
       { tabId },
       'Page.captureScreenshot',
       {
@@ -294,23 +392,79 @@ async function takeFullPageScreenshotOnce(tabId, url) {
         }
       }
     );
-    
+    let result = captureResponse?.result;
+    let screenshotData = result?.data;
+    let viewportResponse = null;
+
+    // If clip-based capture returned no data (e.g. some SPAs), try viewport-only capture
+    if (!screenshotData) {
+      logWarn('Clip capture had no data; trying viewport-only capture', { url });
+      viewportResponse = await chrome.debugger.sendCommand(
+        { tabId },
+        'Page.captureScreenshot',
+        { format: 'png' }
+      );
+      const viewportResult = viewportResponse?.result;
+      screenshotData = viewportResult?.data;
+      if (screenshotData) {
+        logInfo('Viewport-only capture succeeded', { url });
+      }
+    }
+
+    // If CDP still returned no data, try extension API captureVisibleTab (viewport only)
+    if (!screenshotData && tab.windowId) {
+      await chrome.debugger.detach({ tabId }).catch(() => {});
+      logInfo('Trying captureVisibleTab fallback (viewport only)', { url });
+      try {
+        const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+        if (dataUrl) {
+          logInfo('CaptureVisibleTab fallback succeeded', { url });
+          const filename = sanitizeFilename(url);
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+          await chrome.downloads.download({
+            url: dataUrl,
+            filename: `screenshots/${timestamp}_${filename}.png`,
+            saveAs: false
+          });
+          crawlState.screenshotCount++;
+          updateProgress();
+          return true;
+        }
+      } catch (e) {
+        logWarn('CaptureVisibleTab fallback failed', { url, error: e?.message });
+      }
+    }
+
+    if (!screenshotData) {
+      const respKeys = captureResponse?.result ? Object.keys(captureResponse.result) : [];
+      const clipError = captureResponse?.error?.message || captureResponse?.error;
+      const viewportError = viewportResponse?.error?.message || viewportResponse?.error;
+      logError('Screenshot capture returned no data', {
+        url,
+        responseKeys: respKeys,
+        clipError: clipError || null,
+        viewportError: viewportError || null
+      });
+      await chrome.debugger.detach({ tabId }).catch(() => {});
+      return false;
+    }
+
     // Detach debugger
     await chrome.debugger.detach({ tabId });
-    
+
     // Download screenshot
     const filename = sanitizeFilename(url);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    
+
     await chrome.downloads.download({
-      url: `data:image/png;base64,${result.data}`,
+      url: `data:image/png;base64,${screenshotData}`,
       filename: `screenshots/${timestamp}_${filename}.png`,
       saveAs: false
     });
-    
+
     crawlState.screenshotCount++;
     updateProgress();
-    
+
     return true;
     
   } catch (error) {

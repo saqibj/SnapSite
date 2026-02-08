@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SnapSite",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Automatically crawl and screenshot entire websites within their domain",
   "permissions": [
     "activeTab",
@@ -9,7 +9,7 @@
     "scripting",
     "downloads",
     "debugger",
-    "storage"
+    "storage","windows"
   ],
   "host_permissions": [
     "<all_urls>"

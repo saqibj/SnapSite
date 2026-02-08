@@ -89,7 +89,9 @@ Common issues and solutions for the SnapSite extension.
    - SnapSite caps very large pages so the capture doesn’t exceed Chrome’s limits; the top portion is still captured
    - If you see a console warning about “Page very large”, that’s expected
 
-3. **Check the background console for the real error**
+3. **Chrome does not capture inactive (background) tabs** — Chrome only renders the active tab; screenshots of background tabs return no data. SnapSite activates each tab briefly before capture so it can be painted (you may see tabs switching during a crawl). If you still get no data, try increasing **Wait for load** (e.g. 4000–5000 ms).
+
+4. **Check the background console for the real error**
    - Go to `chrome://extensions/` → SnapSite → **Inspect views: service worker**
    - In the Console, look for “Screenshot error:” and the message (e.g. target closed, protocol error)
    - Use that to decide if you need longer wait, fewer tabs open, or to exclude that path

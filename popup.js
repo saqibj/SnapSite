@@ -34,6 +34,7 @@ const logsContent = document.getElementById('logsContent');
 const logsOutput = document.getElementById('logsOutput');
 const refreshLogsBtn = document.getElementById('refreshLogsBtn');
 const copyLogsBtn = document.getElementById('copyLogsBtn');
+const copyLastErrorBtn = document.getElementById('copyLastErrorBtn');
 
 let isPaused = false;
 
@@ -57,49 +58,94 @@ settingsToggle.addEventListener('click', () => {
   toggleIcon.classList.toggle('rotated');
 });
 
-// Logs section: start collapsed
-logsContent.classList.add('collapsed');
-logsToggle.querySelector('.toggle-icon').classList.add('rotated');
-
-logsToggle.addEventListener('click', () => {
-  logsContent.classList.toggle('collapsed');
-  logsToggle.querySelector('.toggle-icon').classList.toggle('rotated');
-  if (!logsContent.classList.contains('collapsed')) {
-    refreshLogs();
-  }
-});
+// Logs section: start collapsed (guard if DOM not present, e.g. old popup)
+if (logsContent) {
+  logsContent.classList.add('collapsed');
+  const logsIcon = logsToggle?.querySelector('.toggle-icon');
+  if (logsIcon) logsIcon.classList.add('rotated');
+}
+if (logsToggle) {
+  logsToggle.addEventListener('click', () => {
+    if (!logsContent) return;
+    logsContent.classList.toggle('collapsed');
+    const icon = logsToggle.querySelector('.toggle-icon');
+    if (icon) icon.classList.toggle('rotated');
+    if (!logsContent.classList.contains('collapsed')) refreshLogs();
+  });
+}
 
 function refreshLogs() {
+  if (!logsOutput) return;
   chrome.runtime.sendMessage({ action: 'getLogs' }, (response) => {
+    if (chrome.runtime.lastError) {
+      logsOutput.textContent = '(Extension context invalid. Reload the extension.)';
+      return;
+    }
     if (response && response.logs) {
-      logsOutput.textContent = response.logs.length ? response.logs.join('\n') : '(No log entries yet. Start a crawl to see logs.)';
+      const lines = response.logs;
+      const text = lines.length
+        ? (response.fromStorage ? '(Logs from previous session — extension was reloaded or restarted.)\n\n' + lines.join('\n') : lines.join('\n'))
+        : '(No log entries yet. Start a crawl to see logs.)';
+      logsOutput.textContent = text;
     } else {
       logsOutput.textContent = '(Could not load logs. Reload the extension and try again.)';
     }
   });
 }
-
-refreshLogsBtn.addEventListener('click', refreshLogs);
-
-copyLogsBtn.addEventListener('click', () => {
-  const text = logsOutput.textContent;
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    copyLogsBtn.textContent = 'Copied!';
-    setTimeout(() => { copyLogsBtn.textContent = 'Copy logs'; }, 1500);
-  }).catch(() => {
-    copyLogsBtn.textContent = 'Copy failed';
-    setTimeout(() => { copyLogsBtn.textContent = 'Copy logs'; }, 1500);
+if (refreshLogsBtn) refreshLogsBtn.addEventListener('click', refreshLogs);
+if (copyLogsBtn) {
+  copyLogsBtn.addEventListener('click', () => {
+    if (!logsOutput) return;
+    const text = logsOutput.textContent;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      copyLogsBtn.textContent = 'Copied!';
+      setTimeout(() => { copyLogsBtn.textContent = 'Copy logs'; }, 1500);
+    }).catch(() => {
+      copyLogsBtn.textContent = 'Copy failed';
+      setTimeout(() => { copyLogsBtn.textContent = 'Copy logs'; }, 1500);
+    });
   });
-});
+}
+if (copyLastErrorBtn) {
+  copyLastErrorBtn.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: 'getLogs' }, (response) => {
+      const btn = copyLastErrorBtn;
+      if (chrome.runtime.lastError || !response?.logs?.length) {
+        btn.textContent = 'No logs';
+        setTimeout(() => { btn.textContent = 'Copy last error'; }, 1500);
+        return;
+      }
+      const lines = response.logs;
+      const lastError = lines.slice().reverse().find(line => line.includes('[ERROR]'));
+      const text = lastError || '';
+      if (!text) {
+        btn.textContent = 'No error in logs';
+        setTimeout(() => { btn.textContent = 'Copy last error'; }, 1500);
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy last error'; }, 1500);
+      }).catch(() => {
+        btn.textContent = 'Copy failed';
+        setTimeout(() => { btn.textContent = 'Copy last error'; }, 1500);
+      });
+    });
+  });
+}
 
 // Save settings when changed
+const parseNum = (val, defaultVal) => {
+  const n = parseInt(val, 10);
+  return Number.isNaN(n) ? defaultVal : n;
+};
 const saveSettings = () => {
   chrome.storage.local.set({
-    maxPages: parseInt(maxPagesInput.value),
-    maxDepth: parseInt(maxDepthInput.value),
-    delay: parseInt(delayInput.value),
-    waitForLoad: parseInt(waitForLoadInput.value),
+    maxPages: parseNum(maxPagesInput.value, 50),
+    maxDepth: parseNum(maxDepthInput.value, 10),
+    delay: parseNum(delayInput.value, 2000),
+    waitForLoad: parseNum(waitForLoadInput.value, 3000),
     excludePatterns: excludePatternsInput.value,
     followSubdomains: followSubdomainsCheckbox.checked,
     ignoreQueryParams: ignoreQueryParamsCheckbox.checked
@@ -132,10 +178,10 @@ startBtn.addEventListener('click', () => {
   }
   
   const config = {
-    maxPages: parseInt(maxPagesInput.value),
-    maxDepth: parseInt(maxDepthInput.value),
-    delay: parseInt(delayInput.value),
-    waitForLoad: parseInt(waitForLoadInput.value),
+    maxPages: parseNum(maxPagesInput.value, 50),
+    maxDepth: parseNum(maxDepthInput.value, 10),
+    delay: parseNum(delayInput.value, 2000),
+    waitForLoad: parseNum(waitForLoadInput.value, 3000),
     excludePatterns: excludePatternsInput.value.split(',').map(p => p.trim()).filter(p => p),
     followSubdomains: followSubdomainsCheckbox.checked,
     ignoreQueryParams: ignoreQueryParamsCheckbox.checked
@@ -180,11 +226,11 @@ downloadAllBtn.addEventListener('click', () => {
   chrome.downloads.showDefaultFolder();
 });
 
-// Clear history
+// Clear history (sync with background so it doesn't repopulate)
 clearHistoryBtn.addEventListener('click', () => {
   if (confirm('Clear recent pages history?')) {
     recentPagesEl.innerHTML = '';
-    chrome.storage.local.set({ recentPages: [] });
+    chrome.runtime.sendMessage({ action: 'clearRecentPages' });
   }
 });
 
@@ -212,12 +258,13 @@ chrome.runtime.onMessage.addListener((message) => {
       }
       
       // Reset UI when completed or stopped
-      if (message.status === 'Completed' || message.status === 'Stopped') {
+      if (message.status === 'Stopped' || (message.status && message.status.startsWith('Completed'))) {
         resetUI();
-        downloadAllBtn.disabled = false;
+        if (downloadAllBtn) downloadAllBtn.disabled = false;
+        if (currentUrlEl) currentUrlEl.textContent = '';
       }
     }
-    
+
     // Update counters
     if (message.crawled !== undefined) {
       crawledEl.textContent = message.crawled;
@@ -237,8 +284,10 @@ chrome.runtime.onMessage.addListener((message) => {
     }
     
     // Update current URL
-    if (message.currentUrl) {
-      currentUrlEl.textContent = `Currently processing: ${message.currentUrl}`;
+    if (message.currentUrl !== undefined) {
+      if (currentUrlEl) {
+        currentUrlEl.textContent = message.currentUrl ? `Currently processing: ${message.currentUrl}` : '';
+      }
     }
     
     // Add to recent pages
@@ -250,15 +299,17 @@ chrome.runtime.onMessage.addListener((message) => {
 
 // Add page to recent pages list
 function addRecentPage(page) {
+  if (!page || !page.url || !recentPagesEl) return;
   const pageItem = document.createElement('div');
   pageItem.className = `recent-page-item ${page.success ? 'success' : 'error'}`;
-  
+
   const icon = page.success ? '✅' : '❌';
+  const url = typeof page.url === 'string' ? page.url : '';
   pageItem.innerHTML = `
     <span class="status-icon">${icon}</span>
-    <span>${truncateUrl(page.url, 60)}</span>
+    <span>${truncateUrl(url, 60)}</span>
   `;
-  
+
   recentPagesEl.insertBefore(pageItem, recentPagesEl.firstChild);
   
   // Keep only last 10 items
@@ -269,36 +320,31 @@ function addRecentPage(page) {
 
 // Truncate URL for display
 function truncateUrl(url, maxLength) {
-  if (url.length <= maxLength) return url;
-  return url.substring(0, maxLength - 3) + '...';
+  const s = typeof url === 'string' ? url : '';
+  if (s.length <= maxLength) return s;
+  return s.substring(0, maxLength - 3) + '...';
 }
 
-// Load initial state from background
+// Load initial state from background (guard against extension reload / no response)
 chrome.runtime.sendMessage({ action: 'getState' }, (response) => {
-  if (response && response.state) {
-    const state = response.state;
-    
-    if (state.isRunning) {
-      startBtn.disabled = true;
-      pauseBtn.disabled = false;
-      stopBtn.disabled = false;
-      
-      if (state.isPaused) {
-        isPaused = true;
-        pauseBtn.innerHTML = '<span class="btn-icon">▶️</span> Resume';
-      }
-    }
-    
-    // Update all UI elements
-    statusEl.textContent = state.status || 'Idle';
-    crawledEl.textContent = state.visited || 0;
-    screenshotsEl.textContent = state.screenshotCount || 0;
-    queueEl.textContent = state.queueSize || 0;
-    
-    if (state.currentUrl) {
-      currentUrlEl.textContent = `Currently processing: ${state.currentUrl}`;
+  if (chrome.runtime.lastError || !response?.state) return;
+  const state = response.state;
+
+  if (state.isRunning) {
+    if (startBtn) startBtn.disabled = true;
+    if (pauseBtn) pauseBtn.disabled = false;
+    if (stopBtn) stopBtn.disabled = false;
+    if (state.isPaused) {
+      isPaused = true;
+      if (pauseBtn) pauseBtn.innerHTML = '<span class="btn-icon">▶️</span> Resume';
     }
   }
+
+  if (statusEl) statusEl.textContent = state.status || 'Idle';
+  if (crawledEl) crawledEl.textContent = state.visited ?? 0;
+  if (screenshotsEl) screenshotsEl.textContent = state.screenshotCount ?? 0;
+  if (queueEl) queueEl.textContent = state.queueSize ?? 0;
+  if (currentUrlEl) currentUrlEl.textContent = state.currentUrl ? `Currently processing: ${state.currentUrl}` : '';
 });
 
 // Load recent pages from storage
