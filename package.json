@@ -1,0 +1,21 @@
+{
+  "name": "snapsite",
+  "version": "1.0.0",
+  "description": "Chrome extension to automatically crawl and screenshot websites",
+  "main": "background.js",
+  "scripts": {
+    "generate-icons": "node generate-icons.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "chrome-extension",
+    "screenshot",
+    "crawler",
+    "web-scraping",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}

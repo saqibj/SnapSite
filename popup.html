@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📸 SnapSite</h1>
+    </div>
+
+    <div class="main-content">
+      <!-- URL Input Section -->
+      <div class="section">
+        <label for="startUrl">Website URL:</label>
+        <input type="text" id="startUrl" placeholder="https://example.com" />
+      </div>
+
+      <!-- Settings Section -->
+      <div class="section collapsible">
+        <div class="section-header" id="settingsToggle">
+          <span>⚙️ Settings</span>
+          <span class="toggle-icon">▼</span>
+        </div>
+        <div class="section-content" id="settingsContent">
+          <div class="setting-item">
+            <label for="maxPages">Max pages:</label>
+            <input type="number" id="maxPages" value="50" min="1" max="1000" />
+          </div>
+          
+          <div class="setting-item">
+            <label for="maxDepth">Max depth:</label>
+            <input type="number" id="maxDepth" value="10" min="1" max="50" />
+          </div>
+          
+          <div class="setting-item">
+            <label for="delay">Delay (ms):</label>
+            <input type="number" id="delay" value="2000" min="500" max="10000" step="500" />
+          </div>
+          
+          <div class="setting-item">
+            <label for="waitForLoad">Wait for load (ms):</label>
+            <input type="number" id="waitForLoad" value="3000" min="1000" max="15000" step="500" />
+          </div>
+
+          <div class="setting-item">
+            <label for="excludePatterns">Exclude patterns (comma-separated):</label>
+            <textarea id="excludePatterns" placeholder="e.g., /admin/, /api/, .pdf" rows="2"></textarea>
+          </div>
+
+          <div class="setting-item checkbox">
+            <input type="checkbox" id="followSubdomains" />
+            <label for="followSubdomains">Include subdomains</label>
+          </div>
+
+          <div class="setting-item checkbox">
+            <input type="checkbox" id="ignoreQueryParams" checked />
+            <label for="ignoreQueryParams">Ignore query parameters</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Control Buttons -->
+      <div class="controls">
+        <button id="startBtn" class="btn btn-primary">
+          <span class="btn-icon">▶️</span> Start Crawling
+        </button>
+        <button id="pauseBtn" class="btn btn-warning" disabled>
+          <span class="btn-icon">⏸️</span> Pause
+        </button>
+        <button id="stopBtn" class="btn btn-danger" disabled>
+          <span class="btn-icon">⏹️</span> Stop
+        </button>
+      </div>
+
+      <!-- Status Section -->
+      <div class="section status-section">
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">Status:</span>
+            <span id="status" class="status-value">Idle</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Pages crawled:</span>
+            <span id="crawled" class="status-value">0</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Screenshots:</span>
+            <span id="screenshots" class="status-value">0</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Queue:</span>
+            <span id="queue" class="status-value">0</span>
+          </div>
+        </div>
+        
+        <div class="progress-bar">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+        
+        <div id="currentUrl" class="current-url"></div>
+      </div>
+
+      <!-- Recent Pages -->
+      <div class="section">
+        <div class="section-header">
+          <span>📄 Recent Pages</span>
+        </div>
+        <div id="recentPages" class="recent-pages"></div>
+      </div>
+
+      <!-- Download Section -->
+      <div class="section">
+        <button id="downloadAllBtn" class="btn btn-secondary" disabled>
+          <span class="btn-icon">📦</span> View Downloads
+        </button>
+        <button id="clearHistoryBtn" class="btn btn-secondary">
+          <span class="btn-icon">🗑️</span> Clear History
+        </button>
+      </div>
+    </div>
+
+    <div class="footer">
+      <small>Screenshots saved to Downloads/screenshots/</small>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
