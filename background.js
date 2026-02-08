@@ -1,3 +1,25 @@
+// --- Logging (for troubleshooting) ---
+const LOG_LEVELS = { INFO: 'INFO', WARN: 'WARN', ERROR: 'ERROR' };
+const LOG_BUFFER_MAX = 100;
+const logBuffer = [];
+
+function log(level, message, detail) {
+  const ts = new Date().toISOString().slice(11, 23); // HH:mm:ss.SSS
+  const detailStr = detail !== undefined ? ' ' + (typeof detail === 'object' ? JSON.stringify(detail) : String(detail)) : '';
+  const line = `[${ts}] [${level}] ${message}${detailStr}`;
+  logBuffer.push(line);
+  if (logBuffer.length > LOG_BUFFER_MAX) logBuffer.shift();
+  if (level === LOG_LEVELS.ERROR) console.error('[SnapSite]', message, detail ?? '');
+  else if (level === LOG_LEVELS.WARN) console.warn('[SnapSite]', message, detail ?? '');
+  else console.log('[SnapSite]', message, detail ?? '');
+}
+
+function logInfo(msg, detail) { log(LOG_LEVELS.INFO, msg, detail); }
+function logWarn(msg, detail) { log(LOG_LEVELS.WARN, msg, detail); }
+function logError(msg, detail) { log(LOG_LEVELS.ERROR, msg, detail); }
+
+function getLogs() { return [...logBuffer]; }
+
 // Crawl state management
 let crawlState = {
   isRunning: false,
@@ -44,6 +66,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         status: getStatus()
       }
     });
+  } else if (message.action === 'getLogs') {
+    sendResponse({ logs: getLogs() });
   }
   return true;
 });
@@ -52,7 +76,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function startCrawl(startUrl, config) {
   try {
     const url = new URL(startUrl);
-    
+    logInfo('Crawl started', { url: startUrl, maxPages: config.maxPages, delay: config.delay, waitForLoad: config.waitForLoad });
+
     // Initialize state
     crawlState.baseHost = url.host;
     crawlState.baseDomain = extractDomain(url.host);
@@ -66,19 +91,20 @@ async function startCrawl(startUrl, config) {
     crawlState.screenshotCount = 0;
     crawlState.startTime = Date.now();
     crawlState.recentPages = [];
-    
+
     updateStatus('Starting crawl...');
-    
+
     // Start crawling
     crawlNext();
   } catch (error) {
-    console.error('Start crawl error:', error);
+    logError('Start crawl failed: invalid URL', error?.message ?? String(error));
     updateStatus('Error: Invalid URL');
   }
 }
 
 // Stop crawling
 function stopCrawl() {
+  logInfo('Crawl stopped by user');
   crawlState.isRunning = false;
   crawlState.isPaused = false;
   crawlState.toVisit = [];
@@ -87,12 +113,14 @@ function stopCrawl() {
 
 // Pause crawling
 function pauseCrawl() {
+  logInfo('Crawl paused');
   crawlState.isPaused = true;
   updateStatus('Paused');
 }
 
 // Resume crawling
 function resumeCrawl() {
+  logInfo('Crawl resumed');
   crawlState.isPaused = false;
   updateStatus('Resumed');
   crawlNext();
@@ -111,45 +139,52 @@ async function crawlNext() {
   
   // Check if reached max pages
   if (crawlState.visited.size >= crawlState.config.maxPages) {
+    logInfo('Crawl completed: max pages reached', { visited: crawlState.visited.size, screenshots: crawlState.screenshotCount });
     updateStatus('Completed (max pages reached)');
     crawlState.isRunning = false;
     return;
   }
-  
+
   // Check if queue is empty
   if (crawlState.toVisit.length === 0) {
+    logInfo('Crawl completed: queue empty', { visited: crawlState.visited.size, screenshots: crawlState.screenshotCount });
     updateStatus('Completed');
     crawlState.isRunning = false;
     return;
   }
-  
+
   // Get next URL
   const url = crawlState.toVisit.shift();
-  
+
   // Skip if already visited
   if (crawlState.visited.has(url)) {
+    logInfo('Skip (already visited)', url);
     crawlNext();
     return;
   }
-  
+
   // Check depth
   const depth = crawlState.urlDepths.get(url) || 0;
   if (depth > crawlState.config.maxDepth) {
+    logInfo('Skip (max depth exceeded)', { url, depth, maxDepth: crawlState.config.maxDepth });
     crawlNext();
     return;
   }
-  
+
   // Mark as visited
   crawlState.visited.add(url);
   crawlState.currentUrl = url;
   updateStatus(`Crawling: ${truncateUrl(url, 50)}`);
   updateProgress();
-  
+  logInfo('Processing page', { url, depth, queueRemaining: crawlState.toVisit.length });
+
   try {
     // Create new tab
     const tab = await chrome.tabs.create({ url, active: false });
-    
+    logInfo('Tab created, waiting for load', { tabId: tab.id });
+
     // Wait for page to load
+    let loadTimedOut = false;
     await new Promise((resolve) => {
       const listener = (tabId, info) => {
         if (tabId === tab.id && info.status === 'complete') {
@@ -158,39 +193,49 @@ async function crawlNext() {
         }
       };
       chrome.tabs.onUpdated.addListener(listener);
-      
+
       // Timeout fallback
       setTimeout(() => {
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
+        if (chrome.tabs.onUpdated.hasListener(listener)) {
+          chrome.tabs.onUpdated.removeListener(listener);
+          loadTimedOut = true;
+          resolve();
+        }
       }, 30000);
     });
-    
+
+    if (loadTimedOut) {
+      logWarn('Page load timed out (30s), continuing anyway', url);
+    }
+
     // Wait for additional load time
     await sleep(crawlState.config.waitForLoad);
-    
+
     // Take screenshot
     const screenshotSuccess = await takeFullPageScreenshot(tab.id, url);
-    
+
     // Extract links
     await extractLinks(tab.id, url, depth);
-    
+
     // Add to recent pages
     addRecentPage(url, screenshotSuccess);
-    
+    if (!screenshotSuccess) {
+      logWarn('Screenshot failed for page (see ERROR above)', url);
+    }
+
     // Close tab
     await chrome.tabs.remove(tab.id);
-    
+
     // Delay before next request
     await sleep(crawlState.config.delay);
-    
+
     // Continue to next URL
     crawlNext();
-    
   } catch (error) {
-    console.error('Crawl error for', url, error);
+    const errMsg = error?.message ?? String(error);
+    logError('Failed to access page', { url, error: errMsg });
     addRecentPage(url, false);
-    
+
     // Continue despite error
     await sleep(crawlState.config.delay);
     crawlNext();
@@ -205,7 +250,7 @@ const MAX_SCREENSHOT_HEIGHT = 16384;
 async function takeFullPageScreenshot(tabId, url) {
   const result = await takeFullPageScreenshotOnce(tabId, url);
   if (result) return true;
-  // Retry once after a short delay (handles transient load/layout issues)
+  logInfo('Screenshot retry after 1s', url);
   await sleep(1000);
   return await takeFullPageScreenshotOnce(tabId, url);
 }
@@ -230,7 +275,7 @@ async function takeFullPageScreenshotOnce(tabId, url) {
     if (width > MAX_SCREENSHOT_WIDTH || height > MAX_SCREENSHOT_HEIGHT) {
       width = Math.min(width, MAX_SCREENSHOT_WIDTH);
       height = Math.min(height, MAX_SCREENSHOT_HEIGHT);
-      console.warn('SnapSite: Page very large, capturing first', height, 'px height');
+      logWarn('Page very large; capping capture size', { width, height });
     }
     
     // Capture full page screenshot
@@ -269,15 +314,16 @@ async function takeFullPageScreenshotOnce(tabId, url) {
     return true;
     
   } catch (error) {
-    console.error('Screenshot error:', error);
-    
+    const errMsg = error?.message ?? String(error);
+    logError('Screenshot failed', { url, error: errMsg });
+
     // Try to detach debugger if attached
     try {
       await chrome.debugger.detach({ tabId });
     } catch (e) {
       // Ignore detach errors
     }
-    
+
     return false;
   }
 }
@@ -299,9 +345,13 @@ async function extractLinks(tabId, currentUrl, currentDepth) {
     if (results && results[0] && results[0].result) {
       const links = results[0].result;
       processLinks(links, currentUrl, currentDepth);
+      logInfo('Links extracted', { url: currentUrl, count: links.length });
+    } else {
+      logWarn('No links extracted (script may have failed)', currentUrl);
     }
   } catch (error) {
-    console.error('Extract links error:', error);
+    const errMsg = error?.message ?? String(error);
+    logError('Extract links failed', { url: currentUrl, error: errMsg });
   }
 }
 
@@ -487,5 +537,5 @@ function sleep(ms) {
 
 // Handle extension installation
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('SnapSite installed');
+  logInfo('SnapSite installed');
 });

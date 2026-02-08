@@ -110,6 +110,22 @@
         <div id="recentPages" class="recent-pages"></div>
       </div>
 
+      <!-- Logs (troubleshooting) -->
+      <div class="section collapsible">
+        <div class="section-header" id="logsToggle">
+          <span>📋 Logs</span>
+          <span class="toggle-icon logs-toggle-icon">▼</span>
+        </div>
+        <div class="section-content" id="logsContent">
+          <div class="logs-toolbar">
+            <button type="button" id="refreshLogsBtn" class="btn btn-secondary btn-small">Refresh</button>
+            <button type="button" id="copyLogsBtn" class="btn btn-secondary btn-small">Copy logs</button>
+          </div>
+          <pre id="logsOutput" class="logs-output"></pre>
+          <small class="logs-hint">For full console: chrome://extensions → SnapSite → Inspect service worker</small>
+        </div>
+      </div>
+
       <!-- Download Section -->
       <div class="section">
         <button id="downloadAllBtn" class="btn btn-secondary" disabled>

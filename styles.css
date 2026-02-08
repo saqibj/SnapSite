@@ -342,3 +342,39 @@ textarea {
 .pulsing {
   animation: pulse 2s ease-in-out infinite;
 }
+
+/* Logs section */
+.logs-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.btn-small {
+  padding: 6px 10px;
+  font-size: 12px;
+  flex: none;
+  width: auto;
+  margin-bottom: 0;
+}
+
+.logs-output {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 10px;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow: auto;
+  margin: 0 0 8px 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.logs-hint {
+  display: block;
+  color: #666;
+  font-size: 11px;
+}

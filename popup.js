@@ -28,6 +28,13 @@ const settingsToggle = document.getElementById('settingsToggle');
 const settingsContent = document.getElementById('settingsContent');
 const toggleIcon = settingsToggle.querySelector('.toggle-icon');
 
+// Logs
+const logsToggle = document.getElementById('logsToggle');
+const logsContent = document.getElementById('logsContent');
+const logsOutput = document.getElementById('logsOutput');
+const refreshLogsBtn = document.getElementById('refreshLogsBtn');
+const copyLogsBtn = document.getElementById('copyLogsBtn');
+
 let isPaused = false;
 
 // Load saved settings
@@ -48,6 +55,42 @@ chrome.storage.local.get([
 settingsToggle.addEventListener('click', () => {
   settingsContent.classList.toggle('collapsed');
   toggleIcon.classList.toggle('rotated');
+});
+
+// Logs section: start collapsed
+logsContent.classList.add('collapsed');
+logsToggle.querySelector('.toggle-icon').classList.add('rotated');
+
+logsToggle.addEventListener('click', () => {
+  logsContent.classList.toggle('collapsed');
+  logsToggle.querySelector('.toggle-icon').classList.toggle('rotated');
+  if (!logsContent.classList.contains('collapsed')) {
+    refreshLogs();
+  }
+});
+
+function refreshLogs() {
+  chrome.runtime.sendMessage({ action: 'getLogs' }, (response) => {
+    if (response && response.logs) {
+      logsOutput.textContent = response.logs.length ? response.logs.join('\n') : '(No log entries yet. Start a crawl to see logs.)';
+    } else {
+      logsOutput.textContent = '(Could not load logs. Reload the extension and try again.)';
+    }
+  });
+}
+
+refreshLogsBtn.addEventListener('click', refreshLogs);
+
+copyLogsBtn.addEventListener('click', () => {
+  const text = logsOutput.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    copyLogsBtn.textContent = 'Copied!';
+    setTimeout(() => { copyLogsBtn.textContent = 'Copy logs'; }, 1500);
+  }).catch(() => {
+    copyLogsBtn.textContent = 'Copy failed';
+    setTimeout(() => { copyLogsBtn.textContent = 'Copy logs'; }, 1500);
+  });
 });
 
 // Save settings when changed
