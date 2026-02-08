@@ -197,8 +197,20 @@ async function crawlNext() {
   }
 }
 
-// Take full page screenshot
+// Chrome CDP screenshot dimension limits (exceeding can cause capture to fail)
+const MAX_SCREENSHOT_WIDTH = 4096;
+const MAX_SCREENSHOT_HEIGHT = 16384;
+
+// Take full page screenshot (with optional retry)
 async function takeFullPageScreenshot(tabId, url) {
+  const result = await takeFullPageScreenshotOnce(tabId, url);
+  if (result) return true;
+  // Retry once after a short delay (handles transient load/layout issues)
+  await sleep(1000);
+  return await takeFullPageScreenshotOnce(tabId, url);
+}
+
+async function takeFullPageScreenshotOnce(tabId, url) {
   try {
     // Attach debugger
     await chrome.debugger.attach({ tabId }, '1.3');
@@ -209,8 +221,17 @@ async function takeFullPageScreenshot(tabId, url) {
       'Page.getLayoutMetrics'
     );
     
-    const width = layout.contentSize.width;
-    const height = layout.contentSize.height;
+    let width = Math.round(layout.contentSize.width);
+    let height = Math.round(layout.contentSize.height);
+    
+    // Cap dimensions to avoid CDP capture failures on very large pages
+    if (width < 1) width = 800;
+    if (height < 1) height = 600;
+    if (width > MAX_SCREENSHOT_WIDTH || height > MAX_SCREENSHOT_HEIGHT) {
+      width = Math.min(width, MAX_SCREENSHOT_WIDTH);
+      height = Math.min(height, MAX_SCREENSHOT_HEIGHT);
+      console.warn('SnapSite: Page very large, capturing first', height, 'px height');
+    }
     
     // Capture full page screenshot
     const { result } = await chrome.debugger.sendCommand(

@@ -73,6 +73,27 @@ Common issues and solutions for the SnapSite extension.
 
 ## 🖼️ Screenshot Issues
 
+### ❌ Red X in Recent Pages (screenshot failed for that URL)
+
+**Symptoms:**
+- Some URLs show a red X in the Recent Pages list
+- No screenshot file for those pages in `Downloads/screenshots/`
+
+**Causes and solutions:**
+
+1. **Page still loading or heavy JavaScript**
+   - Increase **Wait for load** in Settings (e.g. 4000–6000 ms)
+   - The extension retries once automatically; giving the page more time often fixes this
+
+2. **Very tall or wide page**
+   - SnapSite caps very large pages so the capture doesn’t exceed Chrome’s limits; the top portion is still captured
+   - If you see a console warning about “Page very large”, that’s expected
+
+3. **Check the background console for the real error**
+   - Go to `chrome://extensions/` → SnapSite → **Inspect views: service worker**
+   - In the Console, look for “Screenshot error:” and the message (e.g. target closed, protocol error)
+   - Use that to decide if you need longer wait, fewer tabs open, or to exclude that path
+
 ### ❌ Screenshots are blank or white
 
 **Causes:**
