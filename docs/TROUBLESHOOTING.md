@@ -49,9 +49,9 @@ Common issues and solutions for the SnapSite extension.
 
 **Solutions:**
 
-1. **Generate icons first:**
-   - Use `icon-generator.html` (open in browser)
-   - Or use Python/Node.js generators
+1. **Icons are included in the repo.** If missing:
+   - Re-clone the repo, or
+   - Ensure `icons/` has icon16.png, icon32.png, icon48.png, icon128.png
 
 2. **Verify icon folder structure:**
    ```
@@ -441,7 +441,7 @@ if (DEBUG) console.log('Current URL:', url);
 ### Before asking for help:
 
 1. ✅ Check this troubleshooting guide
-2. ✅ Check README.md
+2. ✅ Check the main [README.md](../README.md)
 3. ✅ Check browser console for errors
 4. ✅ Try with different website
 5. ✅ Try with default settings
@@ -473,7 +473,7 @@ If all else fails:
    ```
 
 3. **Reload:**
-   - Generate icons again
+   - Re-clone or ensure `icons/` is present with all 4 PNGs
    - Load unpacked
    - Try default settings
 

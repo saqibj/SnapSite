@@ -1,6 +1,6 @@
 # Example Configurations
 
-This file contains example configurations for different crawling scenarios.
+Example configurations for **SnapSite**—different crawling scenarios and recommended settings.
 
 ## Configuration Options Reference
 

@@ -4,43 +4,13 @@ Follow these steps in order for a successful installation.
 
 ---
 
-## Step 1: Generate Icons 🎨
+## Step 1: Verify Files 📋
 
-You **MUST** generate icons before loading the extension. Choose ONE method:
-
-### Option A: Browser-Based (RECOMMENDED ⭐)
-
-1. Open `icon-generator.html` in your browser (double-click it)
-2. Click "✨ Generate All Icons"  
-3. Click each "📥 Download" button (4 total)
-4. Create folder: `icons/` in the extension directory
-5. Move all 4 downloaded PNG files into `icons/` folder
-
-**Files you should have:**
-```
-icons/icon16.png
-icons/icon32.png
-icons/icon48.png
-icons/icon128.png
-```
-
-### Option B: Python Script
-
-```bash
-pip install pillow
-python generate-icons.py
-```
-
-### Option C: Node.js Script
-
-```bash
-node generate-icons.js
-# Then convert SVG to PNG using online converter
-```
+Icons are **included** in the repo. The `icons/` folder already contains the four required PNG files. No generation step needed.
 
 ---
 
-## Step 2: Verify Files 📋
+## Step 2: Verify All Files 📋
 
 Check that you have ALL these files:
 
@@ -78,7 +48,7 @@ Check that you have ALL these files:
 
 4. **Verify Loading:**
    - Extension should appear in the list
-   - Should show camera icon (if icons were generated)
+   - Should show SnapSite icon (if icons are present in `icons/`)
    - No error messages
 
 ---
@@ -134,11 +104,11 @@ If all these are true, you're good to go:
 
 ### "Failed to load extension"
 → Missing manifest.json or syntax error  
-→ Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+→ Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) in this folder
 
 ### "Could not load icon"
 → Icons folder missing or wrong file names  
-→ Re-run icon generator
+→ Re-clone the repo or ensure `icons/` contains icon16.png, icon32.png, icon48.png, icon128.png
 
 ### Extension loads but no icon
 → Icon files are wrong size  
@@ -164,21 +134,19 @@ SnapSite/
 ├── styles.css             ← Styling
 │
 ├── icons/                 ← MUST CREATE THIS FOLDER
-│   ├── icon16.png        ← 16x16 pixels
-│   ├── icon32.png        ← 32x32 pixels
-│   ├── icon48.png        ← 48x48 pixels
-│   └── icon128.png       ← 128x128 pixels
+│   ├── icon16.png         ← 16x16 pixels
+│   ├── icon32.png         ← 32x32 pixels
+│   ├── icon48.png         ← 48x48 pixels
+│   └── icon128.png        ← 128x128 pixels
 │
-├── README.md              ← Full documentation
-├── QUICKSTART.md          ← Quick start guide
-├── TROUBLESHOOTING.md     ← Problem solving
-├── EXAMPLES.md            ← Configuration examples
-├── FILE_STRUCTURE.md      ← File explanations
+├── docs/                  ← Documentation
+│   ├── INSTALL.md         ← This file
+│   ├── QUICKSTART.md      ← Quick start guide
+│   ├── TROUBLESHOOTING.md ← Problem solving
+│   ├── EXAMPLES.md        ← Configuration examples
+│   └── FILE_STRUCTURE.md  ← File explanations
 │
-├── icon-generator.html    ← Browser icon generator
-├── generate-icons.py      ← Python icon generator
-├── generate-icons.js      ← Node icon generator
-│
+├── README.md              ← Full documentation (project root)
 ├── package.json           ← Node.js config
 ├── .gitignore             ← Git exclusions
 └── LICENSE                ← MIT license
@@ -189,11 +157,11 @@ SnapSite/
 ## 🎯 Next Steps After Installation
 
 1. **Read Quick Start:**
-   - Open [QUICKSTART.md](QUICKSTART.md)
+   - Open [QUICKSTART.md](QUICKSTART.md) (in `docs/`)
    - Learn basic usage
 
 2. **Check Examples:**
-   - Open [EXAMPLES.md](EXAMPLES.md)
+   - Open [EXAMPLES.md](EXAMPLES.md) (in `docs/`)
    - See configuration for different site types
 
 3. **Start Crawling:**
@@ -210,7 +178,7 @@ SnapSite/
 
 If something goes wrong:
 
-1. Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) first
+1. Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) in `docs/` first
 2. Check extension console for errors:
    - `chrome://extensions/` → Details → Inspect views
 3. Try with default settings

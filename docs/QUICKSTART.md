@@ -1,49 +1,20 @@
 # 🚀 Quick Start Guide
 
-## Installation in 3 Steps
+## Installation in 2 Steps
 
-### Step 1: Generate Icons
+Icons are **included** in the repo—no need to generate them.
 
-Choose ONE method:
-
-**Option A: Browser-Based (Easiest - No Installation Required)**
-1. Open `icon-generator.html` in your browser
-2. Click "Generate All Icons"
-3. Download all 4 icon files
-4. Create an `icons` folder in the extension directory
-5. Move all downloaded PNG files into the `icons` folder
-
-**Option B: Python Script**
-```bash
-pip install pillow
-python generate-icons.py
-```
-
-**Option C: Node.js Script**
-```bash
-node generate-icons.js
-# Then convert SVG to PNG using online tool
-```
-
-**Option D: Manual Creation**
-- Create 4 PNG images: 16x16, 32x32, 48x48, 128x128 pixels
-- Use any image editor (Photoshop, GIMP, Paint.NET, etc.)
-- Save as: `icon16.png`, `icon32.png`, `icon48.png`, `icon128.png`
-- Place in `icons/` folder
-
----
-
-### Step 2: Load Extension in Chrome
+### Step 1: Load Extension in Chrome
 
 1. Open Chrome and go to: `chrome://extensions/`
 2. Enable "Developer mode" (toggle in top-right)
 3. Click "Load unpacked"
 4. Select the `SnapSite` folder
-5. Extension should appear with a camera icon
+5. Extension should appear with the SnapSite icon
 
 ---
 
-### Step 3: Start Using
+### Step 2: Start Using
 
 1. Click the extension icon in Chrome toolbar
 2. Enter a website URL (e.g., `https://example.com`)
@@ -73,7 +44,7 @@ node generate-icons.js
 ### "Extension could not be loaded"
 - Make sure all files are in the correct folder
 - Verify `manifest.json` exists
-- Check that icons folder has all 4 PNG files
+- Check that `icons/` contains icon16.png, icon32.png, icon48.png, icon128.png (included in repo)
 
 ### "No screenshots appearing"
 - Check your Downloads folder
@@ -97,12 +68,14 @@ SnapSite/
 ├── popup.js
 ├── background.js
 ├── styles.css
+├── docs/
+│   ├── INSTALL.md
+│   ├── QUICKSTART.md      ← This file
+│   ├── EXAMPLES.md
+│   ├── TROUBLESHOOTING.md
+│   └── FILE_STRUCTURE.md
 ├── README.md
-├── QUICKSTART.md
-├── icon-generator.html
-├── generate-icons.py
-├── generate-icons.js
-└── icons/
+└── icons/                 ← Icons included in repo
     ├── icon16.png
     ├── icon32.png
     ├── icon48.png
@@ -113,7 +86,7 @@ SnapSite/
 
 ## Need Help?
 
-1. Read the full [README.md](README.md)
+1. Read the full [README.md](../README.md) in the project root
 2. Check Chrome's extension console: `chrome://extensions/` → Details → "Inspect views"
 3. Look for errors in browser console (F12)
 

@@ -2,6 +2,8 @@
 
 A powerful Chrome extension that automatically crawls websites and captures full-page screenshots of every page within the same domain.
 
+**Repository:** [github.com/saqibj/SnapSite](https://github.com/saqibj/SnapSite)
+
 ## ✨ Features
 
 - **Automatic Crawling** - Intelligently discovers and visits all pages within a website
@@ -24,13 +26,54 @@ A powerful Chrome extension that automatically crawls websites and captures full
 - Sufficient disk space for screenshots
 - Active internet connection
 
+## 📁 Project Structure
+
+```
+SnapSite/
+├── manifest.json          # Extension config (Manifest V3)
+├── popup.html             # Popup UI
+├── popup.js               # Popup logic
+├── background.js          # Crawling engine (service worker)
+├── styles.css             # Popup styling
+├── icons/                 # Extension icons (16, 32, 48, 128px)
+├── docs/                  # Documentation
+│   ├── INSTALL.md         # Installation checklist
+│   ├── QUICKSTART.md      # Quick start guide
+│   ├── EXAMPLES.md        # Configuration examples
+│   ├── TROUBLESHOOTING.md # Problem solving
+│   └── FILE_STRUCTURE.md  # File reference
+├── package.json
+├── .gitignore
+├── LICENSE
+└── README.md              # This file
+```
+
+## 📚 Documentation
+
+| Doc | Description |
+|-----|--------------|
+| [INSTALL.md](docs/INSTALL.md) | Step-by-step installation checklist |
+| [QUICKSTART.md](docs/QUICKSTART.md) | Get running in 3 steps |
+| [EXAMPLES.md](docs/EXAMPLES.md) | Configuration examples by site type |
+| [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and fixes |
+| [FILE_STRUCTURE.md](docs/FILE_STRUCTURE.md) | File-by-file reference |
+
 ## 🚀 Installation
 
-### Method 1: Load Unpacked Extension (For Development/Testing)
+### Method 1: Clone and Load (Recommended)
 
-1. **Download the Extension**
-   - Download all files from the `SnapSite` folder
-   - Keep all files in the same directory
+1. **Get the code**
+   ```bash
+   git clone https://github.com/saqibj/SnapSite.git
+   cd SnapSite
+   ```
+2. **Load the extension** in Chrome (see *Load Unpacked Extension* below). Icons are included in the repo.
+
+### Load Unpacked Extension
+
+1. **Get the extension**
+   - Clone the repo (see above) or download the `SnapSite` folder
+   - Icons are already in `icons/`—no need to generate them
 
 2. **Open Chrome Extensions**
    - Open Chrome and navigate to `chrome://extensions/`
@@ -49,25 +92,7 @@ A powerful Chrome extension that automatically crawls websites and captures full
    - Find "SnapSite" and click the pin icon
    - The extension icon will now appear in your toolbar
 
-### Method 2: Create Icons (Required Before Loading)
-
-The extension requires icon files. Create simple placeholder icons:
-
-1. **Create an `icons` folder** inside the extension directory
-
-2. **Generate icons** using an online tool or image editor:
-   - Create 4 PNG images: 16x16, 32x32, 48x48, 128x128 pixels
-   - Simple camera/screenshot icon works well
-   - Save as: `icon16.png`, `icon32.png`, `icon48.png`, `icon128.png`
-
-3. **Or use a script** to generate placeholder icons (requires Node.js):
-   ```bash
-   # Install canvas library
-   npm install canvas
-   
-   # Run the icon generator script
-   node generate-icons.js
-   ```
+**Icons:** The repo includes ready-to-use icons in `icons/` (16×16, 32×32, 48×48, 128×128). No generation step needed.
 
 ## 📖 How to Use
 
@@ -258,9 +283,9 @@ Created for automated website documentation and archival purposes.
 ## 📞 Support
 
 For issues or questions:
-- Check the Troubleshooting section
+- Check the [Troubleshooting](docs/TROUBLESHOOTING.md) section
 - Review Chrome Extension documentation
-- Open an issue on the repository
+- [Open an issue](https://github.com/saqibj/SnapSite/issues) on the repository
 
 ---
 

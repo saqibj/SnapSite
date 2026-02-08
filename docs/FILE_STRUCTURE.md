@@ -2,6 +2,32 @@
 
 Complete guide to all files in the SnapSite extension.
 
+## 📁 Directory Structure
+
+```
+SnapSite/
+├── manifest.json          # Extension config
+├── popup.html
+├── popup.js
+├── background.js
+├── styles.css
+├── icons/
+│   ├── icon16.png
+│   ├── icon32.png
+│   ├── icon48.png
+│   └── icon128.png
+├── docs/
+│   ├── INSTALL.md
+│   ├── QUICKSTART.md
+│   ├── EXAMPLES.md
+│   ├── TROUBLESHOOTING.md
+│   └── FILE_STRUCTURE.md   # This file
+├── package.json
+├── .gitignore
+├── LICENSE
+└── README.md
+```
+
 ## 📁 Core Extension Files (Required)
 
 ### `manifest.json` ⭐ REQUIRED
@@ -81,88 +107,55 @@ Complete guide to all files in the SnapSite extension.
 - `icon48.png` - 48x48 pixels (extension management)
 - `icon128.png` - 128x128 pixels (Chrome Web Store)
 
-**Must exist** before loading extension. Use one of the generators.
+**Included in the repo**—no generation needed.
 
 ---
 
-## 📚 Documentation Files (Recommended)
+## 📚 Documentation Files (in `docs/`)
 
-### `README.md`
-**Purpose:** Complete documentation  
-**Contains:**
-- Feature overview
-- Installation instructions
-- Usage guide
-- Settings explanation
-- Troubleshooting
-- Technical details
+### `README.md` (project root)
+**Purpose:** Main documentation  
+**Contains:** Feature overview, installation, usage, settings, troubleshooting, technical details.
 
 **For:** Understanding how to use the extension.
 
 ---
 
-### `QUICKSTART.md`
+### `docs/QUICKSTART.md`
 **Purpose:** Fast installation guide  
-**Contains:**
-- 3-step installation
-- Common issues
-- File structure reference
+**Contains:** 3-step installation, common issues, file structure reference.
 
 **For:** Getting started quickly.
 
 ---
 
-### `EXAMPLES.md`
+### `docs/INSTALL.md`
+**Purpose:** Step-by-step installation checklist  
+**Contains:** File verification, load steps, folder structure.
+
+**For:** First-time setup.
+
+---
+
+### `docs/EXAMPLES.md`
 **Purpose:** Configuration examples  
-**Contains:**
-- 10+ real-world use cases
-- Recommended settings for different site types
-- Exclude pattern examples
-- Performance tips
+**Contains:** 10+ real-world use cases, recommended settings, exclude patterns, performance tips.
 
 **For:** Learning best practices.
 
 ---
 
-## 🛠️ Icon Generation Files (Choose One)
+### `docs/TROUBLESHOOTING.md`
+**Purpose:** Problem solving  
+**Contains:** Installation issues, screenshot issues, debugging, reset steps.
 
-### `icon-generator.html` ⭐ EASIEST
-**Purpose:** Browser-based icon generator  
-**Type:** Standalone HTML file  
-**Usage:**
-1. Open in any browser
-2. Click "Generate All Icons"
-3. Download all 4 icons
-4. Place in `icons/` folder
-
-**No installation required!**
+**For:** When something goes wrong.
 
 ---
 
-### `generate-icons.py`
-**Purpose:** Python icon generator  
-**Type:** Python script  
-**Requirements:** Python 3 + Pillow  
-**Usage:**
-```bash
-pip install pillow
-python generate-icons.py
-```
-
-**For:** Python developers.
-
----
-
-### `generate-icons.js`
-**Purpose:** Node.js icon generator  
-**Type:** JavaScript (Node.js)  
-**Usage:**
-```bash
-node generate-icons.js
-# Then convert SVG to PNG
-```
-
-**For:** Node.js developers (generates SVG).
+### `docs/FILE_STRUCTURE.md` (this file)
+**Purpose:** File-by-file reference  
+**Contains:** All files explained, dependency tree, checklist.
 
 ---
 
@@ -223,8 +216,7 @@ To load the extension, you MUST have:
 
 Before loading extension:
 
-- [ ] Created `icons/` folder
-- [ ] Generated all 4 icon PNG files
+- [ ] `icons/` folder present with icon16.png, icon32.png, icon48.png, icon128.png (included in repo)
 - [ ] All 5 code files present (manifest, popup.html/js, background.js, styles.css)
 - [ ] Folder structure matches the tree above
 - [ ] Developer mode enabled in Chrome
@@ -262,12 +254,11 @@ After modifying any file:
 
 ## 🚀 Next Steps
 
-1. ✅ Generate icons using `icon-generator.html`
-2. ✅ Load extension in Chrome
-3. ✅ Read `QUICKSTART.md` for first use
-4. ✅ Check `EXAMPLES.md` for configuration ideas
-5. ✅ Start crawling!
+1. ✅ Load extension in Chrome (icons are included)
+2. ✅ Read [QUICKSTART.md](QUICKSTART.md) for first use
+3. ✅ Check [EXAMPLES.md](EXAMPLES.md) for configuration ideas
+4. ✅ Start crawling!
 
 ---
 
-**Questions?** Check the README.md for detailed documentation.
+**Questions?** Check the [README.md](../README.md) in the project root for detailed documentation.
