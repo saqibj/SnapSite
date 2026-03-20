@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-- Nothing yet.
+### Added
+
+- Static marketing landing page at `landing/index.html` (SaaS-style product page; host or open locally).
 
 ## [1.1.0] - 2026-02-08
 

@@ -37,6 +37,8 @@ SnapSite/
 ├── background.js          # Crawling engine (service worker)
 ├── styles.css             # Popup styling
 ├── icons/                 # Extension icons (16, 32, 48, 128px)
+├── landing/               # Marketing landing page (static HTML)
+│   └── index.html
 ├── docs/                  # Documentation
 │   ├── INSTALL.md         # Installation checklist
 │   ├── QUICKSTART.md      # Quick start guide
@@ -60,6 +62,7 @@ SnapSite/
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and fixes |
 | [FILE_STRUCTURE.md](docs/FILE_STRUCTURE.md) | File-by-file reference |
 | [CHANGELOG.md](CHANGELOG.md) | Release history and versioning |
+| [Landing page](landing/index.html) | Product marketing site (open locally or host statically) |
 
 ## 🚀 Installation
 

@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SnapSite — Full-site screenshots, on autopilot</title>
+  <meta name="description" content="Crawl any domain and capture full-page screenshots of every page. Chrome extension for teams that need visual archives, QA references, and site documentation." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-deep: #0c0a12;
+      --bg-panel: #14111f;
+      --bg-elevated: #1c1828;
+      --text: #f4f2fb;
+      --text-muted: #a69fc0;
+      --accent: #8b7cf6;
+      --accent-2: #c084fc;
+      --accent-soft: rgba(139, 124, 246, 0.15);
+      --border: rgba(255, 255, 255, 0.08);
+      --gradient-hero: radial-gradient(120% 80% at 15% 10%, rgba(139, 124, 246, 0.35), transparent 55%),
+        radial-gradient(90% 60% at 85% 0%, rgba(192, 132, 252, 0.22), transparent 50%),
+        radial-gradient(70% 50% at 50% 100%, rgba(102, 126, 234, 0.18), transparent 45%);
+      --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.55);
+      --radius: 14px;
+      --radius-sm: 10px;
+      --font-display: "Syne", system-ui, sans-serif;
+      --font-body: "Karla", system-ui, sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      font-size: 1.0625rem;
+      line-height:1.6;
+      color: var(--text);
+      background: var(--bg-deep);
+      background-image: var(--gradient-hero);
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+
+    a {
+      color: var(--accent-2);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -999px;
+      top: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--text);
+      color: var(--bg-deep);
+      border-radius: 6px;
+      z-index: 100;
+    }
+
+    .skip-link:focus {
+      left: 0.5rem;
+    }
+
+    .wrap {
+      width: min(1120px, 92vw);
+      margin-inline: auto;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(14px);
+      background: rgba(12, 10, 18, 0.72);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 0;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .brand:hover {
+      text-decoration: none;
+      color: var(--accent-2);
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.35);
+    }
+
+    .nav-links {
+      display: none;
+      align-items: center;
+      gap: 1.75rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    @media (min-width: 840px) {
+      .nav-links {
+        display: flex;
+      }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.72rem 1.25rem;
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 3px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea, #8b5cf6 55%, #a855f7);
+      color: #fff;
+      box-shadow: 0 12px 40px rgba(139, 92, 246, 0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 48px rgba(139, 92, 246, 0.45);
+      text-decoration: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-elevated);
+      border-color: rgba(255, 255, 255, 0.14);
+      text-decoration: none;
+    }
+
+    .hero {
+      padding: clamp(3.5rem, 10vw, 6.5rem) 0 4rem;
+    }
+
+    .hero-grid {
+      display: grid;
+      gap: 3rem;
+      align-items: center;
+    }
+
+    @media (min-width: 900px) {
+      .hero-grid {
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 2.5rem;
+      }
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(139, 124, 246, 0.25);
+      color: var(--accent-2);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.35rem, 5.5vw, 3.45rem);
+      line-height: 1.05;
+      letter-spacing: -0.035em;
+      margin: 0 0 1.25rem;
+      font-weight: 800;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(120deg, #e9d5ff, #a78bfa 40%, #c4b5fd);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .lead {
+      color: var(--text-muted);
+      font-size: 1.125rem;
+      max-width: 34rem;
+      margin: 0 0 1.75rem;
+    }
+
+    .hero-ctas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin-bottom: 2rem;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .hero-meta strong {
+      color: var(--text);
+      display: block;
+      font-size: 0.95rem;
+    }
+
+    .mock {
+      position: relative;
+      border-radius: calc(var(--radius) + 6px);
+      padding: 1px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+      box-shadow: var(--shadow-lg);
+    }
+
+    .mock-inner {
+      border-radius: var(--radius);
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .mock-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.65rem 1rem;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mock-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #4ade80;
+    }
+
+    .mock-dot:nth-child(2) {
+      background: #facc15;
+    }
+
+    .mock-dot:nth-child(3) {
+      background: #f87171;
+    }
+
+    .mock-url {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: ui-monospace, monospace;
+      opacity: 0.9;
+    }
+
+    .mock-body {
+      padding: 1.25rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .mock-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 1rem;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    .mock-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.55rem;
+      border-radius: 6px;
+      background: rgba(74, 222, 128, 0.12);
+      color: #86efac;
+    }
+
+    .mock-badge.queue {
+      background: rgba(250, 204, 21, 0.12);
+      color: #fde047;
+    }
+
+    section {
+      padding: 4rem 0;
+    }
+
+    section h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+      letter-spacing: -0.03em;
+      margin: 0 0 0.75rem;
+    }
+
+    .section-lead {
+      color: var(--text-muted);
+      max-width: 40rem;
+      margin: 0 0 2.5rem;
+    }
+
+    .features {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 680px) {
+      .features {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 980px) {
+      .features {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .card {
+      padding: 1.35rem 1.35rem 1.45rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(139, 124, 246, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      background: var(--accent-soft);
+    }
+
+    .card h3 {
+      font-family: var(--font-display);
+      font-size: 1.08rem;
+      margin: 0 0 0.5rem;
+      font-weight: 700;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.98rem;
+    }
+
+    .steps {
+      display: grid;
+      gap: 1.25rem;
+      counter-reset: step;
+    }
+
+    @media (min-width: 760px) {
+      .steps {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .step {
+      position: relative;
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--bg-elevated), var(--bg-panel));
+      border: 1px solid var(--border);
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 0.95rem;
+      background: rgba(139, 124, 246, 0.2);
+      color: var(--accent-2);
+      margin-bottom: 1rem;
+    }
+
+    .step h3 {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      margin: 0 0 0.45rem;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .cta-band {
+      margin: 2rem 0 0;
+      padding: clamp(2.5rem, 6vw, 3.5rem);
+      border-radius: calc(var(--radius) + 4px);
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+      border: 1px solid rgba(139, 124, 246, 0.35);
+      text-align: center;
+    }
+
+    .cta-band h2 {
+      margin-bottom: 0.5rem;
+    }
+
+    .cta-band p {
+      color: var(--text-muted);
+      max-width: 32rem;
+      margin: 0 auto 1.5rem;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 0 3rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    @media (min-width: 640px) {
+      .footer-inner {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .footer-links a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#">
+        <span class="brand-mark" aria-hidden="true">📸</span>
+        SnapSite
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="https://github.com/saqibj/SnapSite/blob/main/README.md">Docs</a>
+      </nav>
+      <div style="display:flex;gap:0.6rem;align-items:center;flex-shrink:0">
+        <a class="btn btn-ghost" href="https://github.com/saqibj/SnapSite">GitHub</a>
+        <a class="btn btn-primary" href="https://github.com/saqibj/SnapSite#-installation">Get SnapSite</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero wrap hero-grid" aria-labelledby="hero-title">
+      <div>
+        <p class="eyebrow">Chrome extension · Domain-safe crawling</p>
+        <h1 id="hero-title">Full-site screenshots, <span>on autopilot</span></h1>
+        <p class="lead">
+          Point SnapSite at a URL. It maps your site, respects boundaries, and saves a full-page PNG for every page it visits—ideal for archives, handoffs, and visual regression baselines.
+        </p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="https://github.com/saqibj/SnapSite#-installation">Install from source</a>
+          <a class="btn btn-ghost" href="https://github.com/saqibj/SnapSite">Browse the repo</a>
+        </div>
+        <div class="hero-meta">
+          <div><strong>Domain scoped</strong> Same-site links only</div>
+          <div><strong>Configurable</strong> Depth, delays, excludes</div>
+          <div><strong>Portable</strong> Runs locally in Chrome</div>
+        </div>
+      </div>
+      <div class="mock" aria-hidden="true">
+        <div class="mock-inner">
+          <div class="mock-bar">
+            <span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span>
+            <span class="mock-url">crawl://yoursite.com · SnapSite</span>
+          </div>
+          <div class="mock-body">
+            <div class="mock-row">
+              <span>Queue</span>
+              <span class="mock-badge queue">12 pages</span>
+            </div>
+            <div class="mock-row">
+              <span>/pricing — captured</span>
+              <span class="mock-badge">Saved</span>
+            </div>
+            <div class="mock-row">
+              <span>/docs/api — captured</span>
+              <span class="mock-badge">Saved</span>
+            </div>
+            <div class="mock-row">
+              <span>Progress</span>
+              <span style="color:var(--accent-2);font-weight:700">Paused · Resume</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="wrap" aria-labelledby="features-title">
+      <h2 id="features-title">Everything you need to capture a whole site</h2>
+      <p class="section-lead">
+        Built for operators who want predictable crawls: throttle politely, exclude noise, and always know what finished.
+      </p>
+      <div class="features">
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">🧭</div>
+          <h3>Automatic discovery</h3>
+          <p>Walks internal links within the same domain so you get coverage without hand-picking URLs.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">📜</div>
+          <h3>True full-page shots</h3>
+          <p>Captures beyond the viewport—scroll height included—so documentation matches what users can reach.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">🎛️</div>
+          <h3>Smart guardrails</h3>
+          <p>Set max pages, crawl depth, delays, subdomains, query handling, and URL exclude patterns.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">⏱️</div>
+          <h3>Live progress</h3>
+          <p>Watch queue size, completion status, and what SnapSite has already processed.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">⏯️</div>
+          <h3>Pause &amp; resume</h3>
+          <p>Stop mid-run without losing your place when you need to free the machine or adjust settings.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">📁</div>
+          <h3>Auto-download</h3>
+          <p>Screenshots land in your Downloads folder so they plug into existing review or storage workflows.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="how-it-works" class="wrap" aria-labelledby="how-title">
+      <h2 id="how-title">How it works</h2>
+      <p class="section-lead">
+        Three steps from “I need captures” to a folder full of evidence—no SaaS login required.
+      </p>
+      <div class="steps">
+        <div class="step">
+          <h3>Load the extension</h3>
+          <p>Clone the repo and load the unpacked build in Chrome—see the install guide for the exact clicks.</p>
+        </div>
+        <div class="step">
+          <h3>Configure the crawl</h3>
+          <p>Paste a start URL, tune depth and delays, and add exclude patterns for admin, PDFs, or assets.</p>
+        </div>
+        <div class="step">
+          <h3>Run &amp; collect PNGs</h3>
+          <p>Start the crawl, pause if needed, and let SnapSite drop full-page screenshots into Downloads.</p>
+        </div>
+      </div>
+      <div class="cta-band">
+        <h2>Ready to archive your next release?</h2>
+        <p>SnapSite is open source. Fork it, script around it, or ship it to your team’s Chrome profile today.</p>
+        <a class="btn btn-primary" href="https://github.com/saqibj/SnapSite">Open GitHub</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <p>© <span id="y"></span> SnapSite. MIT License.</p>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="https://github.com/saqibj/SnapSite/blob/main/docs/QUICKSTART.md">Quick start</a>
+        <a href="https://github.com/saqibj/SnapSite/blob/main/docs/TROUBLESHOOTING.md">Troubleshooting</a>
+        <a href="https://github.com/saqibj/SnapSite/blob/main/LICENSE">License</a>
+      </nav>
+    </div>
+  </footer>
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
